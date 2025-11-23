@@ -38,6 +38,9 @@ export default function QuestionPage() {
       setQuestion(data);
     } catch (error) {
       console.error('Failed to load question:', error);
+      // Redirect to dashboard if question generation fails
+      alert('Failed to generate question. Please try again.');
+      navigate('/dashboard');
     } finally {
       setLoading(false);
     }

@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [userProgress, setUserProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -24,15 +25,17 @@ export default function DashboardPage() {
 
   const loadDashboardData = async () => {
     try {
+      setError(null);
       const [coursesData, progressData] = await Promise.all([
-        courseAPI.getCourses(),
-        progressAPI.getUserProgress(user!.id),
+        courseAPI.getCourses().catch(() => []),
+        progressAPI.getUserProgress(user!.id).catch(() => ({ topic_progress: [], total_questions: 0, overall_accuracy: 0 })),
       ]);
 
-      setCourses(coursesData);
+      setCourses(coursesData || []);
       setUserProgress(progressData);
     } catch (error) {
       console.error('Failed to load dashboard:', error);
+      setError('Failed to load dashboard data. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -41,13 +44,18 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="text-white text-xl">Loading your dashboard...</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {error && (
+        <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg mx-8 mt-4">
+          {error}
+        </div>
+      )}
       {/* Navigation */}
       <nav className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm px-8 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">

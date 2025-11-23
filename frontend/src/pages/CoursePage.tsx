@@ -25,9 +25,11 @@ export default function CoursePage() {
     try {
       const data = await courseAPI.getCourse(courseId!);
       setCourse(data.course);
-      setTopics(data.topics);
+      setTopics(data.topics || []);
     } catch (error) {
       console.error('Failed to load course:', error);
+      // Redirect to dashboard if course not found
+      navigate('/dashboard');
     } finally {
       setLoading(false);
     }

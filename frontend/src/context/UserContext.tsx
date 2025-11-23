@@ -57,7 +57,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, fullName: string) => {
-    await authAPI.register(email, password, fullName);
+    const response = await authAPI.register(email, password, fullName);
+    // Store token if returned
+    if (response.access_token) {
+      localStorage.setItem('access_token', response.access_token);
+    }
     await loadUser();
   };
 

@@ -39,7 +39,21 @@ async def root():
     return {
         "status": "online",
         "service": "SkillForge LMS API",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "message": "Backend is running! Visit /api/docs for API documentation"
+    }
+
+@app.get("/health")
+async def health_check():
+    """Detailed health check"""
+    from app.core.config import settings
+    
+    return {
+        "status": "healthy",
+        "environment": settings.ENVIRONMENT,
+        "supabase_configured": settings.SUPABASE_URL != "https://placeholder.supabase.co",
+        "gemini_configured": settings.GEMINI_API_KEY != "placeholder_gemini_key",
+        "judge0_configured": settings.JUDGE0_API_KEY != "placeholder_judg",
     }
 
 @app.on_event("startup")

@@ -10,40 +10,33 @@ class SupabaseClient:
     """Wrapper around Supabase client with helper methods"""
     
     def __init__(self):
-        self.client: Client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_KEY
-        )
-        self.admin_client: Client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_SERVICE_KEY
-        )
+        self._client: Optional[Client] = None
+        self._admin_client: Optional[Client] = None
+    
+    @property
+    def client(self) -> Client:
+        """Lazy-load Supabase client"""
+        if self._client is None:
+            # Create client with only required parameters
+            self._client = create_client(
+                supabase_url=settings.SUPABASE_URL,
+                supabase_key=settings.SUPABASE_KEY
+            )
+        return self._client
+    
+    @property
+    def admin_client(self) -> Client:
+        """Lazy-load Supabase admin client"""
+        if self._admin_client is None:
+            # Create admin client with only required parameters
+            self._admin_client = create_client(
+                supabase_url=settings.SUPABASE_URL,
+                supabase_key=settings.SUPABASE_SERVICE_KEY
+            )
+        return self._admin_client
     
     # ============= AUTH METHODS =============
-    
-    async def sign_up(self, email: str, password: str, metadata: Dict[str, Any]) -> Dict:
-        """Register a new user"""
-        response = self.client.auth.sign_up({
-            "email": email,
-            "password": password,
-            "options": {
-                "data": metadata
-            }
-        })
-        return response
-    
-    async def sign_in(self, email: str, password: str) -> Dict:
-        """Authenticate user"""
-        response = self.client.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        return response
-    
-    async def get_user(self, access_token: str) -> Optional[Dict]:
-        """Get user from access token"""
-        response = self.client.auth.get_user(access_token)
-        return response.user if response else None
+    # Auth methods are handled directly in auth.py router
     
     # ============= USER PROFILE METHODS =============
     

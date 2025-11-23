@@ -39,7 +39,29 @@ export default function LandingPage() {
       }
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Authentication failed');
+      console.error('Auth error:', err);
+      console.error('Error response:', err.response);
+      
+      // Handle different error formats
+      let errorMessage = 'Authentication failed';
+      
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        // If detail is an array (validation errors from FastAPI)
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (typeof detail === 'object') {
+          errorMessage = JSON.stringify(detail);
+        }
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

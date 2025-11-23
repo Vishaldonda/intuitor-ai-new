@@ -160,6 +160,9 @@ ALTER TABLE question_attempts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own profile" ON user_profiles
     FOR SELECT USING (auth.uid() = id);
 
+CREATE POLICY "Users can insert own profile" ON user_profiles
+    FOR INSERT WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Users can update own profile" ON user_profiles
     FOR UPDATE USING (auth.uid() = id);
 
@@ -180,11 +183,55 @@ CREATE POLICY "Users can view own attempts" ON question_attempts
 CREATE POLICY "Users can insert own attempts" ON question_attempts
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Public read access for courses, topics, subtopics
+-- Public read access for courses, topics, subtopics, questions
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subtopics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Anyone can view courses" ON courses FOR SELECT USING (true);
 CREATE POLICY "Anyone can view topics" ON topics FOR SELECT USING (true);
 CREATE POLICY "Anyone can view subtopics" ON subtopics FOR SELECT USING (true);
+CREATE POLICY "Anyone can view questions" ON questions FOR SELECT USING (true);
+
+-- ============= FUNCTIONS & TRIGGERS =============
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Trigger for user_profiles
+CREATE TRIGGER update_user_profiles_updated_at 
+    BEFORE UPDATE ON user_profiles 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to handle new user registration (creates profile automatically)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  INSERT INTO public.user_profiles (id, email, full_name, created_at, updated_at)
+  VALUES (
+    new.id,
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'full_name', 'User'),
+    now(),
+    now()
+  );
+  RETURN new;
+END;
+$$;
+
+-- Trigger to automatically create user profile on auth signup
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
